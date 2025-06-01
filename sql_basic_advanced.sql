@@ -628,6 +628,374 @@ order by b.visita_qtd desc
 
 
 
+-- TIPOS DE CONVERSÃO
+-- Operador ::
+-- CAST
+
+-- EXEMPLOS
+
+-- (Exemplo 1) Conversão de texto em data
+-- Corrija a query abaixo utilizando o operador ::
+
+
+select '2021-10-01'::date - '2021-02-01':: date
+
+select  nomecoluna::date
+from tbl
+
+
+
+-- (Exemplo 2) Conversão de texto em número
+-- Corrija a query abaixo utilizando o operador ::
+select '100'::numeric - '10'::numeric
+
+
+-- (Exemplo 3) Conversão de número em texto
+-- Corrija a query abaixo utilizando o operador ::
+select replace(112122::text,'1','A')
+
+
+-- (Exemplo 4) Conversão de texto em data
+-- Corrija a query abaixo utilizando a função CAST
+select cast('2021-10-01' as date) - cast('2021-02-01' as date)
+
+
+-- RESUMO 
+-- (1) O operador :: e o CAST() são funções utilizadas para converter um dado para 
+-- a unidade desejada. 
+-- (2) O operador :: é mais "clean", porém, em algumas ocasiões não funciona, sendo
+-- necessário utilizar a função CAST()
+-- (3) Use o Guia de comandos para consultar a lista de unidades mais utilizadas
+
+-- TIPOS
+-- CASE WHEN
+-- COALESCE()
+
+
+-- EXEMPLOS
+
+-- (Exemplo 1) Agrupamento de dados com CASE WHEN
+-- Calcule o nº de clientes que ganham abaixo de 5k, entre 5k e 10k, entre 10k e 
+-- 15k e acima de 15k
+
+select * from sales.customers
+
+
+with faixa_renda as(
+select income, 
+case when income < 5000 then '-5k'
+ when income >= 5000 and income < 10000 then '5 a 10k'
+  when income >= 10000 and income < 15000 then '10 a 15k'
+  else '+15k'
+  end as faixarend
+  from sales.customers 
+)
+
+select count(*) as qtd, faixarend
+from faixa_renda
+group by faixarend
+order by qtd desc
+
+
+-- (Exemplo 2) Tratamento de dados nulos com COALESCE
+-- Crie uma coluna chamada populacao_ajustada na tabela temp_tables.regions e
+-- preencha com os dados da coluna population, mas caso esse campo estiver nulo, 
+-- preencha com a população média (geral) das cidades do Brasil
+
+
+
+select *,
+case when population is not null then population
+else (select avg(population) from temp_tables.regions)
+end as population_ajustada
+from temp_tables.regions 
+
+-- usando coalesce
+select *,
+coalesce(population, (select avg(population) from temp_tables.regions)) as population_ajustada
+from temp_tables.regions
+where population is null
+
+
+-- (1) CASE WHEN é o comando utilizado para criar respostas específicas para 
+-- diferentes condições e é muito utilizado para fazer agrupamento de dados
+-- (2) COALESCE é o comando utilizado para preencher campos nulos com o primeiro
+-- valor não nulo de uma sequência de valores.
+
+
+-- LOWER()
+-- UPPER()
+-- TRIM()
+-- REPLACE()
+
+-- EXEMPLOS
+
+-- (Exemplo 1) Corrija o primeiro elemento das queries abaixo utilizando os comandos 
+-- de tratamento de texto para que o resultado seja sempre TRUE 
+
+select upper('São Paulo') = 'SÃO PAULO'
+
+
+select lower('São Paulo') = 'são paulo'
+
+
+select trim('SÃO PAULO     ') = 'SÃO PAULO'
+
+
+select replace('SAO PAULO', 'AO', 'ÃO') = 'SÃO PAULO'
+
+
+
+-- Tratamento de Datas 
+
+
+-- (Exemplo 1) Soma de datas utilizando INTERVAL
+-- Calcule a data de hoje mais 10 unidades (dias, semanas, meses, horas)
+--utilizado para somar datas na unidade desejada, default é dias
+
+select current_date + 10
+
+select (current_date + INTERVAL'10 WEEKS')::DATE
+
+select (current_date + INTERVAL'22 MONTHS')::DATE
+
+select (current_date + INTERVAL'22 HOURS')
+
+-- (Exemplo 2) Truncagem de datas utilizando DATE_TRUNC
+-- Calcule quantas visitas ocorreram por mês no site da empresa
+
+select visit_page_date, count(*)
+from sales.funnel
+group by visit_page_date
+order by visit_page_date desc
+
+select DATE_TRUNC('month', VISIT_PAGE_DATE)::DATE AS VISIT_PAGE_MONTH,
+COUNT(*) AS QTD
+from sales.funnel
+GROUP BY VISIT_PAGE_MONTH
+
+select DATE_TRUNC('year', VISIT_PAGE_DATE)::DATE AS VISIT_PAGE_year,
+COUNT(*) AS QTD
+from sales.funnel
+GROUP BY VISIT_PAGE_year
+-- AS DATAS SERÃO CONVERTIDAS PARA O PRIMEIRO DIA DE CADA MES
+
+
+-- (Exemplo 3) Extração de unidades de uma data utilizando EXTRACT
+-- Calcule qual é o dia da semana que mais recebe visitas ao site
+
+select
+	current_date::date,
+	extract('dow' from current_date::date)
+
+
+select extract('dow' from visit_page_date) as dayweek,
+count(*) as qtd
+from sales.funnel 
+group  by dayweek
+order by dayweek
+-- dow significa day of the week
+	
+
+-- (Exemplo 4) Diferença entre datas com operador de subtração (-) 
+-- Calcule a diferença entre hoje e '2018-06-01', em dias, semanas, meses e anos.
+
+select (current_date - '2003-11-04')
+
+select (current_date - '2003-11-04')/7
+
+select (current_date - '2003-11-04')/30
+
+select (current_date - '2003-11-04')/365
+
+
+select datediff('weeks', current_date, '2025-11-04')
+
+
+-- RESUMO
+-- (1) O comando INTERVAL é utilizado para somar datas na unidade desejada. Caso a 
+-- unidade não seja informada, o SQL irá entender que a soma foi feita em dias.
+-- (2) O comando DATE_TRUNC é utilizado para truncar uma data no início do período
+-- (3) O comando EXTRACT é utilizado para extrair unidades de uma data/timestamp
+-- (4) O cálculo da diferença entre datas com o operador de subtração (-) retorna  
+-- valores em dias. Para calcular a diferença entre datas em outra unidade é necessário
+-- fazer uma transformação de unidades (ou criar uma função para isso)
+-- (5) Utilize o Guia de comandos para consultar as unidades de data e hora utilizadas 
+-- no SQL
+
+
+-- Funcoes
+-- PARA QUE SERVEM
+-- Servem para criar comandos personalizados de scripts usados recorrentemente.
+
+
+-- EXEMPLOS 
+-- (Exemplo 1) Crie uma função chamada DATEDIFF para calcular a diferença entre
+-- duas datas em dias, semanas, meses, anos
+
+create function datediff(unidade varchar, data_inicial date, data_final date)
+returns integer 
+language sql 
+as
+$$ 
+select 
+case when unidade in('day', 'days', 'd') then
+ (data_final - data_inicial)
+when unidade in('week', 'weeks', 'w') then 
+(data_final - data_inicial)/7
+when unidade in('month', 'months', 'm') then 
+(data_final - data_inicial)/30
+when unidade in('year', 'years', 'y') then 
+(data_final - data_inicial)/365
+end as diferenca
+$$
+
+select datediff('d', '2024-11-04', current_date)
+
+
+
+-- (Exemplo 2) Delete a função DATEDIFF criada no exercício anterior
+
+drop function datediff
+
+
+-- RESUMO
+-- (1) Para criar funções, utiliza-se o comando CREATE FUNCTION
+-- (2) Para que o comando funcione é obrigatório informar (a) quais as unidades dos 
+-- INPUTS (b) quais as unidades dos OUTPUTS e (c) em qual linguagem a função será escrita
+-- (3) O script da função deve estar delimitado por $$
+-- (4) Para deletar uma função utiliza-se o comando DROP FUNCTION
+
+
+
+
+
+-- Criação de tabela a partir de uma query
+-- Criação de tabela a partir do zero
+-- Deleção de tabelas
+-- (Exemplo 1) Criação de tabela a partir de uma query
+-- Crie uma tabela chamada customers_age com o id e a idade dos clientes. 
+-- Chame-a de temp_tables.customers_age
+
+select customer_id, datediff('y', birth_date, current_date) as age_customer
+into temp_tables.customers_age
+from sales.customers
+
+select * from temp_tables.customers_age
+
+-- (Exemplo 2) Criação de tabela a partir do zero
+-- Crie uma tabela com a tradução dos status profissionais dos clientes. 
+-- Chame-a de temp_tables.profissoes
+
+select distinct professional_status
+from sales.customers 
+
+create table temp_tables.occupations (
+professional_status VARCHAR(20), status_profissional VARCHAR(20)
+)
+
+select * from temp_tables.occupations
+
+--add rows
+
+INSERT INTO temp_tables.occupations 
+(professional_status, status_profissional) 
+VALUES 
+('businessman', 'empresario'),
+('freelancer', 'freelancer'),
+('clt', 'clt'),
+('retired', 'aposentado')
+
+
+delete professional_status from
+temp_tables.occupations where professional_status = 'freelancer'
+
+-- (Exemplo 3) Deleção de tabelas
+-- Delete a tabela temp_tables.profissoes
+
+drop table temp_tables.occupations 
+
+
+
+-- RESUMO 
+-- (1) Para criar tabelas a partir de uma query basta escrever a query normalmente e
+-- colocar o comando INTO antes do FROM informando o schema e o nome da tabela 
+-- a ser criada
+-- (2) Para criar tabelas a partir do zero é necessário (a) criar uma tabela vazia 
+-- com o comando CREATE TABLE (b) Informar que valores serão inseridos com o comando
+-- INSERT INTO seguido do nome das colunas (c) Inserir os valores manualmente em forma 
+-- de lista após o comando VALUES
+-- (3) Para deletar uma tabela utiliza-se o comando DROP TABLE
+
+
+create table temp_tables.occupations (
+professional_status VARCHAR(20), status_profissional VARCHAR(20)
+)
+select * from temp_tables.occupations
+
+INSERT INTO temp_tables.occupations 
+(professional_status, status_profissional) 
+VALUES 
+('unemployed', 'desempregado'),
+('trainee', 'estag')
+
+update temp_tables.occupations
+set status_profissional = 'estagiario' where status_profissional = 'estag'
+
+update temp_tables.occupations
+set professional_status = 'intern' where professional_status = 'trainee'
+
+delete from temp_tables.occupations 
+where professional_status ='unemployed'
+
+-- CONTEÚDO 
+-- Inserção de colunas
+-- Alteração de colunas
+-- Deleção de colunas
+
+-- (Exemplo 1) Inserção de Colunas
+-- Insira uma coluna na tabela sales.customers com a idade do cliente
+
+alter table sales.customers 
+add customer_age int
+
+select * from sales.customers
+
+update sales.customers 
+set customer_age=datediff('y', birth_date, current_date)
+where true
+
+-- (Exemplo 2) Alteração do tipo da coluna
+-- Altere o tipo da coluna customer_age de inteiro para varchar
+
+alter table sales.customers 
+alter column customer_age type varchar
+
+-- (Exemplo 3) Alteração do nome da coluna
+-- Renomeie o nome da coluna "customer_age" para "age"
+
+alter table sales.customers 
+rename column customer_age to age
+
+-- (Exemplo 4) Deleção de coluna
+-- Delete a coluna "age"
+
+alter table sales.customers 
+drop column age
+
+
+-- RESUMO
+-- (1) Para fazer qualquer modificação nas colunas de uma tabela utiliza-se o comando 
+-- ALTER TABLE seguido do nome da tabela
+-- (2) Para adicionar colunas utiliza-se o comando ADD seguido do nome da coluna e da
+-- unidade da nova coluna
+-- (3) Para mudar o tipo de unidade de uma coluna utiliza-se o comando ALTER COLUMN 
+-- (4) Para renomear uma coluna utiliza-se o comando RENAME COLUMN
+-- (5) Para deletar uma coluna utiliza-se o comando DROP COLUMN
+
+
+
+
 
 
 
