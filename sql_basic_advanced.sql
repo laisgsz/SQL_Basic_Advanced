@@ -993,6 +993,268 @@ drop column age
 -- (4) Para renomear uma coluna utiliza-se o comando RENAME COLUMN
 -- (5) Para deletar uma coluna utiliza-se o comando DROP COLUMN
 
+--Dashboard de vendas com os principais indicadores de desempenho
+
+
+--truncando as datas por month
+-- (Query 1) Receita, leads, conversão e ticket médio mês a mês
+-- Colunas: mês, leads (#), vendas (#), receita (k, R$), conversão (%), ticket médio (k, R$)
+with 
+	leads as (
+		select
+			date_trunc('month', visit_page_date)::date as visit_page_month,
+			count(*) as visit_page_count
+		from sales.funnel
+		group by visit_page_month
+		order by visit_page_month
+	),
+	
+	payments as (
+		select
+			date_trunc('month', fun.paid_date)::date as paid_month,
+			count(fun.paid_date) as paid_count,
+			sum(pro.price * (1+fun.discount)) as receita
+		from sales.funnel as fun
+		left join sales.products as pro
+			on fun.product_id = pro.product_id
+		where fun.paid_date is not null
+		group by paid_month
+		order by paid_month
+	)
+	
+select
+	leads.visit_page_month as "mês",
+	leads.visit_page_count as "leads (#)",
+	payments.paid_count as "vendas (#)",
+	(payments.receita/1000) as "receita (k, R$)",
+	(payments.paid_count::float/leads.visit_page_count::float) as "conversão (%)",
+	(payments.receita/payments.paid_count/1000) as "ticket médio (k, R$)"
+from leads
+left join payments
+	on leads.visit_page_month = paid_month
+
+
+--Estados que mais venderam 
+--pais, estado, vendas
+
+select 'Brazil' as pais, 
+b.state as estado, 
+count(a.paid_date) as "vendas"
+from sales.funnel as a
+left join sales.customers as b
+ON a.customer_id = b.customer_id
+where paid_date between '2021-08-01' and '2021-08-31'
+group by pais, estado
+order by vendas desc
+limit 5 
+
+--Marcas que mais venderam no mes 
+select 
+b.brand as marca,
+count(paid_date) as vendas 
+from sales.funnel as a
+left join sales.products as b
+on a.product_id = b.product_id
+where paid_date between  '2021-08-01' and '2021-08-31'
+group by marca
+order by vendas desc
+limit 5
+
+-- lojas que mais venderam 
+
+select 
+b.store_name as loja,
+count(paid_date) as vendas 
+from sales.funnel as a
+left join sales.stores as b
+on a.store_id = b.store_id
+where paid_date between  '2021-08-01' and '2021-08-31'
+group by loja
+order by vendas desc
+limit 5
+
+
+
+-- dia da semana com maior numero de visitas
+select 
+extract('dow' from visit_page_date) as dia_semana,
+case 
+when extract('dow' from visit_page_date)=0 then 'sunday'
+when extract('dow' from visit_page_date)=1 then 'monday'
+when extract('dow' from visit_page_date) =2 then 'tuesday'
+when extract('dow' from visit_page_date) =3 then 'wednesday'
+when extract('dow' from visit_page_date) =4 then 'thursday'
+when extract('dow' from visit_page_date)=5 then 'friday'
+when extract('dow' from visit_page_date)=6 then 'saturday'
+else 'null'
+end as dia_week,
+count(*) as visitas
+from sales.funnel as a
+where visit_page_date between '2021-08-01' and '2021-08-31'
+group by dia_semana
+order by dia_semana asc
+
+
+-- Criar dashboard que 
+--demonstre caracteristicas dos clientes/leads
+
+select * from temp_tables.ibge_genders
+
+
+select
+case when ib.gender = 'male' then 'homens'
+when ib.gender ='female' then 'mulheres'
+end as genero,
+count(*) as leads
+from sales.customers as a
+left join  temp_tables.ibge_genders as ib
+on lower(a.first_name) = lower(ib.first_name)
+group by ib.gender
+
+-- status profissional dos leads
+select
+ distinct professional_status
+from sales.customers 
+
+select
+ case when professional_status = 'freelancer' then professional_status 
+ when professional_status = 'retired' then 'aposentado'
+ when professional_status = 'clt' then 'clt'
+ when professional_status = 'self_employed' then 'autonomo'
+ when  professional_status = 'businessman' then 'empresario'
+ when  professional_status = 'civil_servant' then 'servidor publico'
+ when  professional_status = 'student' then 'estudante'
+ else 'outros'
+ end as status_profissional,
+ (count(*)::float)/(select count(*):: float from sales.customers) as leads_porcent
+from sales.customers
+where professional_status is not null
+group by professional_status
+order by leads_porcent desc
+
+select
+	case
+		when professional_status = 'freelancer' then 'freelancer'
+		when professional_status = 'retired' then 'aposentado(a)'
+		when professional_status = 'clt' then 'clt'
+		when professional_status = 'self_employed' then 'autônomo(a)'		
+		when professional_status = 'other' then 'outro'
+		when professional_status = 'businessman' then 'empresário(a)'
+		when professional_status = 'civil_servant' then 'funcionário(a) público(a)'
+		when professional_status = 'student' then 'estudante'
+		end as "status profissional",
+	(count(*)::float)/(select count(*) from sales.customers) as "leads (%)"
+
+from sales.customers
+group by professional_status
+order by "leads (%)"
+
+
+--faixa etaria
+
+
+select
+	case
+		when income < 5000 then '0-5000'
+		when income < 10000 then '5000-10000'
+		when income < 15000 then '10000-15000'
+		when income < 20000 then '15000-20000'
+		else '20000+' end "faixa salarial",
+		count(*)::float/(select count(*) from sales.customers) as "leads (%)",
+	case
+		when income < 5000 then 1
+		when income < 10000 then 2
+		when income < 15000 then 3
+		when income < 20000 then 4
+		else 5 end as "ordem"
+from sales.customers
+group by "faixa salarial", "ordem"
+order by "ordem" desc
+
+--classificacao dos veiculos 
+
+
+with
+	classificacao_veiculos as (
+	
+		select
+			fun.visit_page_date,
+			pro.model_year, -- ano do modelo do veiculo , --extract ano que o veiculo foi visitado
+			extract('year' from visit_page_date) - pro.model_year::int as idade_veiculo,
+			case
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=2 then 'novo'
+				else 'seminovo'
+				end as "classificação do veículo"
+		
+		from sales.funnel as fun
+		left join sales.products as pro
+			on fun.product_id = pro.product_id	
+	)
+
+select
+	"classificação do veículo",
+	count(*) as "veículos visitados (#)"
+from classificacao_veiculos
+group by "classificação do veículo"
+
+
+--classificacao dos veiculos por idade
+
+-- (Query 6) Idade dos veículos visitados
+-- Colunas: Idade do veículo, veículos visitados (%), ordem
+
+with
+	faixa_de_idade_dos_veiculos as (
+	
+		select
+			fun.visit_page_date,
+			pro.model_year,
+			-- ano que o veiculo foi visitado menos o ano do modelo do veiculo 
+			extract('year' from visit_page_date) - pro.model_year::int as idade_veiculo,
+			case
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=2 then 'até 2 anos'
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=4 then 'de 2 à 4 anos'
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=6 then 'de 4 à 6 anos'
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=8 then 'de 6 à 8 anos'
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=10 then 'de 8 à 10 anos'
+				else 'acima de 10 anos'
+				end as "idade do veículo",
+			case
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=2 then 1
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=4 then 2
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=6 then 3
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=8 then 4
+				when (extract('year' from visit_page_date) - pro.model_year::int)<=10 then 5
+				else 6
+				end as "ordem"
+
+		from sales.funnel as fun
+		left join sales.products as pro
+			on fun.product_id = pro.product_id	
+	)
+
+select
+	"idade do veículo",
+	count(*)::float/(select count(*) from sales.funnel) as "veículos visitados (%)",
+	ordem
+from faixa_de_idade_dos_veiculos
+group by "idade do veículo", ordem
+order by ordem
+
+
+-- (Query 7) Veículos mais visitados por marca
+-- Colunas: brand, model, visitas (#)
+
+select
+	pro.brand,
+	pro.model,
+	count(*) as "visitas (#)"
+
+from sales.funnel as fun
+left join sales.products as pro
+	on fun.product_id = pro.product_id
+group by pro.brand, pro.model
+order by pro.brand, pro.model, "visitas (#)"
 
 
 
