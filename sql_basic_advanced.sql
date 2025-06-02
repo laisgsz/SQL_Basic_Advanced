@@ -27,8 +27,6 @@ select distinct brand, model_year from sales.products
 -- (3) Caso mais de uma coluna seja selecionada, o comando SELECT DISTINCT irá 
 -- retornar todas as combinações distintas.
 
-
--- Where
 select distinct state from sales.customers
 
 Select first_name, state, birth_date
@@ -54,12 +52,8 @@ limit 10
 
 select * from sales.customers limit 10
 
-
-
 select distinct city from sales.customers where state = 'MG' 
 order by city asc
-
-
 
 -- (Exercício 2) Selecione o visit_id das 10 compras mais recentes efetuadas
 -- (dados da tabela sales.funnel)
@@ -76,21 +70,17 @@ select * from sales.customers where birth_date >= '2000-01-01'
 order by score desc 
 limit 10
 
-
-
 -- Operadores
-
  Select * from sales.customers
  limit 10
 
  --Calular idade cliente hoje
-
 select email,
 birth_date,
 (current_date - birth_date) / 365  as "age cliente"
  from sales.customers
 
- 
+
 select email,
 birth_date,
 (current_date - birth_date) / 365  as "age cliente"
@@ -105,7 +95,6 @@ select first_name, professional_status,
 case when professional_status = 'clt' then 1 else 0 end as flag_clt
 from sales.customers
 
-
 -- Operadores
 -- AND
 -- OR
@@ -116,9 +105,7 @@ from sales.customers
 -- ILIKE
 -- IS NULL
 
-
--- EXEMPLOS ########################################################################
-
+-- EXEMPLOS 
 -- (Exemplo 1) Uso do comando BETWEEN 
 -- Selecione veículos que custam entre 100k e 200k na tabela products
 select *
@@ -127,8 +114,6 @@ where price >= 100000 and price <= 200000
 
 select * from  sales.products
 where price between 100000 and 200000
-
-
 
 
 -- (Exemplo 2)  Uso do comando NOT
@@ -146,13 +131,9 @@ select *
 from sales.products
 where brand = 'HONDA' or brand = 'TOYOTA' or brand = 'RENAULT'
 
-
 select *
 from sales.products
 where brand not in('HONDA','TOYOTA','RENAULT')
-
-
-
 
 -- (Exemplo 4) Uso do comando LIKE (matchs imperfeitos)
 -- Selecione os primeiros nomes distintos da tabela customers que começam
@@ -174,7 +155,6 @@ where first_name like '%ANA'
 select distinct first_name
 from sales.customers
 where first_name ilike 'ana%'
-
 
 -- (Exemplo 6) Uso do comando IS NULL
 -- Selecionar apenas as linhas que contém nulo no campo "population" na tabela
@@ -224,10 +204,8 @@ select email, income,
 case when (income / 1200) >= 5 then 1 else 0 end as acima_4_salarios
 from sales.customers
 
-
 -- (Exercício 3) Na query anterior filtre apenas os clientes que ganham entre
 -- 4 e 5 salários mínimos. Utilize o comando BETWEEN
-
 select email, income, 
 (income / 1200) as qtd_salario_minimo,
 from sales.customers
@@ -483,8 +461,6 @@ order by qtd_clientes desc
 -- Comando union
 --- colar uma tabela na outra
 -- entre tabelas com mesma qtd de coluna e mesmo tipo de unidade
-
-
 -- union all não remove linhas duplicadas
 -- union - remove duplicadas
 
@@ -540,8 +516,6 @@ group by professional_status;
 -- (Exemplo 4) Subquery no SELECT
 -- Na tabela sales.funnel crie uma coluna que informe o nº de visitas acumuladas 
 -- que a loja visitada recebeu até o momento
-
-
 select 
 a.visit_id,
 a.visit_page_date,
@@ -567,8 +541,6 @@ order by b.store_name, a.visit_page_date
 
 -- (Exemplo 1) Análise de recorrência dos leads
 -- Calcule o volume de visitas por dia ao site separado por 1ª visita e demais visitas
-
-
 
 with first_visit as(
 select customer_id, min(visit_page_date) as visita_1
@@ -626,24 +598,17 @@ left join qtdvisits as b
 on a.customer_id = b.customer_id
 order by b.visita_qtd desc
 
-
-
 -- TIPOS DE CONVERSÃO
 -- Operador ::
 -- CAST
-
 -- EXEMPLOS
-
 -- (Exemplo 1) Conversão de texto em data
 -- Corrija a query abaixo utilizando o operador ::
 
 
 select '2021-10-01'::date - '2021-02-01':: date
-
 select  nomecoluna::date
 from tbl
-
-
 
 -- (Exemplo 2) Conversão de texto em número
 -- Corrija a query abaixo utilizando o operador ::
@@ -659,7 +624,6 @@ select replace(112122::text,'1','A')
 -- Corrija a query abaixo utilizando a função CAST
 select cast('2021-10-01' as date) - cast('2021-02-01' as date)
 
-
 -- RESUMO 
 -- (1) O operador :: e o CAST() são funções utilizadas para converter um dado para 
 -- a unidade desejada. 
@@ -670,8 +634,6 @@ select cast('2021-10-01' as date) - cast('2021-02-01' as date)
 -- TIPOS
 -- CASE WHEN
 -- COALESCE()
-
-
 -- EXEMPLOS
 
 -- (Exemplo 1) Agrupamento de dados com CASE WHEN
@@ -748,7 +710,6 @@ select replace('SAO PAULO', 'AO', 'ÃO') = 'SÃO PAULO'
 
 -- Tratamento de Datas 
 
-
 -- (Exemplo 1) Soma de datas utilizando INTERVAL
 -- Calcule a data de hoje mais 10 unidades (dias, semanas, meses, horas)
 --utilizado para somar datas na unidade desejada, default é dias
@@ -780,7 +741,6 @@ from sales.funnel
 GROUP BY VISIT_PAGE_year
 -- AS DATAS SERÃO CONVERTIDAS PARA O PRIMEIRO DIA DE CADA MES
 
-
 -- (Exemplo 3) Extração de unidades de uma data utilizando EXTRACT
 -- Calcule qual é o dia da semana que mais recebe visitas ao site
 
@@ -794,9 +754,9 @@ count(*) as qtd
 from sales.funnel 
 group  by dayweek
 order by dayweek
+	
 -- dow significa day of the week
 	
-
 -- (Exemplo 4) Diferença entre datas com operador de subtração (-) 
 -- Calcule a diferença entre hoje e '2018-06-01', em dias, semanas, meses e anos.
 
@@ -807,7 +767,6 @@ select (current_date - '2003-11-04')/7
 select (current_date - '2003-11-04')/30
 
 select (current_date - '2003-11-04')/365
-
 
 select datediff('weeks', current_date, '2025-11-04')
 
@@ -827,7 +786,6 @@ select datediff('weeks', current_date, '2025-11-04')
 -- Funcoes
 -- PARA QUE SERVEM
 -- Servem para criar comandos personalizados de scripts usados recorrentemente.
-
 
 -- EXEMPLOS 
 -- (Exemplo 1) Crie uma função chamada DATEDIFF para calcular a diferença entre
@@ -852,12 +810,9 @@ $$
 
 select datediff('d', '2024-11-04', current_date)
 
-
-
 -- (Exemplo 2) Delete a função DATEDIFF criada no exercício anterior
 
 drop function datediff
-
 
 -- RESUMO
 -- (1) Para criar funções, utiliza-se o comando CREATE FUNCTION
@@ -865,10 +820,6 @@ drop function datediff
 -- INPUTS (b) quais as unidades dos OUTPUTS e (c) em qual linguagem a função será escrita
 -- (3) O script da função deve estar delimitado por $$
 -- (4) Para deletar uma função utiliza-se o comando DROP FUNCTION
-
-
-
-
 
 -- Criação de tabela a partir de uma query
 -- Criação de tabela a partir do zero
@@ -914,8 +865,6 @@ temp_tables.occupations where professional_status = 'freelancer'
 -- Delete a tabela temp_tables.profissoes
 
 drop table temp_tables.occupations 
-
-
 
 -- RESUMO 
 -- (1) Para criar tabelas a partir de uma query basta escrever a query normalmente e
